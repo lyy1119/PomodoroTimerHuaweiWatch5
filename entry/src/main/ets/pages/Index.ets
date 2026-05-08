@@ -54,7 +54,10 @@ struct Index {
 
         // 递归调用 start_timer
         this.timer.start_timer(
-          (timeString: string) => { this.displayTime = timeString; },
+          (timeString: string) => {
+            this.currentTitle = this.timer.currentTitle; // 关键修复：确保自动进入下一阶段时标题能刷新
+            this.displayTime = timeString;
+          },
           () => { this.handleTimeUp(); }
         );
       }
@@ -97,7 +100,7 @@ struct Index {
         Text(this.currentTitle)
           .fontSize(20)
           .fontColor(Color.Gray)
-          .margin({ top: 30, bottom: 10 })
+          .margin({ top: 15, bottom: 10 })
 
         // 2. 倒计时 (分秒)
         Text(this.displayTime)
@@ -141,11 +144,7 @@ struct Index {
                 if (this.timer.timePointer === -1) { // need init
                   this.timer.generate_schedule();
                   this.timer.next_period();
-                  // 同步 UI 标题和时间
-                  this.currentTitle = this.timer.currentTitle;
-                  this.displayTime = this.timer.currentCountdownTime;
                 }
-
                 // 调用 timer.start_timer(...)
                 this.timer.start_timer((timeString: string) => {
                   this.currentTitle = this.timer.currentTitle;
@@ -173,7 +172,7 @@ struct Index {
             .onClick(() => {
               // TODO: 调用 timer.skip_period(...)
               this.timer.skip_period(() => {
-
+                this.handleTimeUp(); // 关键修复：填入回调，通知系统时间到了
               })
             })
         }

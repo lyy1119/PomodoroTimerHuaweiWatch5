@@ -78,12 +78,10 @@ export class PomodoroTimer {
   }
 
   get currentTitle(): string {
-    if (this.timePointer == -1 || this.timeSchedule.length == 0 || this.is_out_of_bounds() || this.timerId == -1)  {
-      // 表明未开启番茄钟 或 存在相关错误
-      // 返回番茄钟标题
-      return 'Pomodoro'
-    } else { // 没问题 访问当前name并返回
-        return this.timeSchedule[this.timePointer].name
+    if (this.timePointer == -1 || this.timeSchedule.length == 0 || this.is_out_of_bounds())  {
+      return 'Ready' // 统一改为 Ready 表示未开始
+    } else {
+      return this.timeSchedule[this.timePointer].name
     }
   }
   /**
@@ -106,13 +104,11 @@ export class PomodoroTimer {
    * 每 500ms 更新一次，通过回调将格式化后的时间传给 UI
    */
   start_timer(on_tick: (displayTime: string) => void, on_finish: () => void): void {
-    if (this.timePointer == -1) {
-      this.timePointer += 1 // time pointer == 0
-    }
-    if (!this.isPaused) return; // 防止重复启动
+    // 修复：删掉强行 timePointer += 1 的逻辑，未初始化则直接返回，依赖外部先调 next_period
+    if (this.timePointer == -1 || this.is_out_of_bounds()) return;
+    if (!this.isPaused) return;
 
     this.isPaused = false;
-    // 更新开始节点
     this.startTimestamp = Date.now();
 
     this.timerId = setInterval(() => {
@@ -121,13 +117,13 @@ export class PomodoroTimer {
       const remainingMs = this.targetDurationMs - elapsed;
 
       if (remainingMs <= 0) {
-        this.exit_timer();
+        this.clear_interval(); // 使用内部清理方法
         on_tick(this.format_time_display(0));
-        on_finish(); // 触发震动和弹窗
+        on_finish();
       } else {
         on_tick(this.format_time_display(remainingMs));
       }
-    }, 500); // 500ms 更新频率
+    }, 500);
   }
   /**
    * 5. 暂停番茄钟函数
@@ -147,27 +143,25 @@ export class PomodoroTimer {
     }
   }
 
+  // 新增/修改：将原先的 exit_timer 改名为 clear_interval，明确其仅作为内部工具函数
+  private clear_interval(): void {
+    if (this.timerId !== -1) {
+      clearInterval(this.timerId);
+      this.timerId = -1;
+    }
+    this.isPaused = true;
+  }
+
   // 跳过当前
   skip_period(on_finish: () => void): void {
-    this.exit_timer();
+    this.clear_interval();
     this.targetDurationMs = 0;
-    on_finish(); // 假装时间到了，直接调用完成回调
+    on_finish();
   }
 
-  exit_timer(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId);
-      this.timerId = -1;
-    }
-    this.isPaused = true;
-  }
-
+  // 彻底退出的重置
   reset(): void {
-    if (this.timerId !== -1) {
-      clearInterval(this.timerId);
-      this.timerId = -1;
-    }
-    this.isPaused = true;
+    this.clear_interval();
     this.timePointer = -1;
     this.targetDurationMs = 0;
   }
@@ -176,17 +170,12 @@ export class PomodoroTimer {
    * 移动时间指针，并为下一个阶段的倒计时做准备
    */
   next_period(): void {
-    // this.exit_timer(); // 清理可能存在的旧计时器
-    if (this.timerId != -1) {
-      clearInterval(this.timerId);
-      this.timerId = -1;
-    }
+    this.clear_interval(); // 清理可能的旧计时器
     this.timePointer += 1;
 
     if (!this.is_out_of_bounds()) {
-      // 初始化目标差值：将分钟转换为毫秒
       this.targetDurationMs = this.timeSchedule[this.timePointer].timeMinutes * 60 * 1000;
-      this.isPaused = true; // 进入新时段默认处于未开始（暂停）状态
+      this.isPaused = true;
     }
   }
 
