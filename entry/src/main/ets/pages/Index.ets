@@ -241,23 +241,17 @@ struct Index {
             // 1. 专注时长
             ListItem() {
               this.SettingItemText("专注时长", `${this.focusDuration} 分钟 >`)
-            }.onClick(() => { /* TODO: 跳转详情设置 */
-              () => { this.activeSettingTarget = 'focus'; }
-            })
+            }.onClick(() => { this.activeSettingTarget = 'focus'; })
 
             // 2. 短休息时长
             ListItem() {
               this.SettingItemText("短休息时长", `${this.shortBreakDuration} 分钟 >`)
-            }.onClick(() => { /* TODO: 跳转详情设置 */
-              () => { this.activeSettingTarget = 'shortBreak'; }
-            })
+            }.onClick(() => { this.activeSettingTarget = 'shortBreak'; })
 
             // 3. 长休息时长
             ListItem() {
               this.SettingItemText("长休息时长", `${this.longBreakDuration} 分钟 >`)
-            }.onClick(() => { /* TODO: 跳转详情设置 */
-              () => { this.activeSettingTarget = 'longBreak'; }
-            })
+            }.onClick(() => { this.activeSettingTarget = 'longBreak'; })
 
             // 4. 自动开始开关
             ListItem() {
@@ -283,9 +277,7 @@ struct Index {
             // 5. 专注时段数目
             ListItem() {
               this.SettingItemText("专注时段数目", `${this.focusCycleCount} 个 >`)
-            }.onClick(() => { /* TODO: 跳转详情设置 */
-              () => { this.activeSettingTarget = 'cycle'; }
-            })
+            }.onClick(() => { this.activeSettingTarget = 'cycle'; })
 
             // 底部留白，方便滚动到底部
             ListItem() {
