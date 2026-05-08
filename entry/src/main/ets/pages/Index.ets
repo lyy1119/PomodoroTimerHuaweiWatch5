@@ -3,6 +3,7 @@
 // 假设你的逻辑类放在 ../model/PomodoroTimer.ets
 import { PomodoroTimer } from '../model/PomodoroTimer';
 import vibrator from '@ohos.vibrator';
+import { SettingPickerView } from './SettingPickerView';
 
 @Entry
 @Component
@@ -83,11 +84,44 @@ struct Index {
   @State isRunning: boolean = false;          // 控制播放/暂停按钮状态
 
   // 设置界面的状态变量
-  @State autoStart: boolean = true;           // 自动开始开关
-  @State focusDuration: number = 25;
-  @State shortBreakDuration: number = 5;
-  @State longBreakDuration: number = 15;
-  @State focusCycleCount: number = 4;
+  @State autoStart: boolean = true;
+  @State focusDuration: number = this.timer.focusDuration;
+  @State shortBreakDuration: number = this.timer.shortBreakDuration;
+  @State longBreakDuration: number = this.timer.longBreakDuration;
+  @State focusCycleCount: number = this.timer.focusCycleCount;
+
+  @State activeSettingTarget: string = '';
+
+  // 保存设置并同步到底层逻辑类
+  save_setting(target: string, value: number): void {
+    switch (target) {
+      case 'focus':
+        this.focusDuration = value;
+        this.timer.focusDuration = value;
+        break;
+      case 'shortBreak':
+        this.shortBreakDuration = value;
+        this.timer.shortBreakDuration = value;
+        break;
+      case 'longBreak':
+        this.longBreakDuration = value;
+        this.timer.longBreakDuration = value;
+        break;
+      case 'cycle':
+        this.focusCycleCount = value;
+        this.timer.focusCycleCount = value;
+        break;
+    }
+    // 关闭选择器界面
+    this.activeSettingTarget = '';
+
+    // 如果当前没有在运行，且被彻底重置过，重新生成一下初始状态以防用户立刻点击开始
+    if (!this.isRunning && this.timer.timePointer === -1) {
+      // TODO: 更新UI显示的默认时间（比如用户把25分改成了30分，立刻更新倒计时文字）
+      // this.timer.targetDurationMs = this.timer.focusDuration * 60 * 1000;
+      this.displayTime = this.timer.currentCountdownTime;
+    }
+  }
 
   build() {
     // Swiper 组件实现左右滑动
@@ -188,56 +222,90 @@ struct Index {
       // 第二页：设置界面
       // ==========================================
       Column() {
-        Text("设置")
-          .fontSize(20)
-          .fontColor(Color.White)
-          .margin({ top: 30, bottom: 10 })
+        if (this.activeSettingTarget === 'focus') {
+          SettingPickerView({ title: "专注时长", currentValue: this.focusDuration, on_confirm: (val) => this.save_setting('focus', val) })
+        } else if (this.activeSettingTarget === 'shortBreak') {
+          SettingPickerView({ title: "短休息时长", currentValue: this.shortBreakDuration, on_confirm: (val) => this.save_setting('shortBreak', val) })
+        } else if (this.activeSettingTarget === 'longBreak') {
+          SettingPickerView({ title: "长休息时长", currentValue: this.longBreakDuration, on_confirm: (val) => this.save_setting('longBreak', val) })
+        } else if (this.activeSettingTarget === 'cycle') {
+          SettingPickerView({ title: "专注时段数目", currentValue: this.focusCycleCount, on_confirm: (val) => this.save_setting('cycle', val) })
+        } else {
+          Text("设置")
+            .fontSize(20)
+            .fontColor(Color.White)
+            .margin({ top: 30, bottom: 10 })
 
-        // 滚动列表
-        List({ space: 10 }) {
-          // 1. 专注时长
-          ListItem() {
-            this.SettingItemText("专注时长", `${this.focusDuration} 分钟 >`)
-          }.onClick(() => { /* TODO: 跳转详情设置 */ })
+          // 滚动列表
+          List({ space: 10 }) {
+            // 1. 专注时长
+            ListItem() {
+              this.SettingItemText("专注时长", `${this.focusDuration} 分钟 >`)
+            }.onClick(() => { /* TODO: 跳转详情设置 */
+              () => { this.activeSettingTarget = 'focus'; }
+            })
 
-          // 2. 短休息时长
-          ListItem() {
-            this.SettingItemText("短休息时长", `${this.shortBreakDuration} 分钟 >`)
-          }.onClick(() => { /* TODO: 跳转详情设置 */ })
+            // 2. 短休息时长
+            ListItem() {
+              this.SettingItemText("短休息时长", `${this.shortBreakDuration} 分钟 >`)
+            }.onClick(() => { /* TODO: 跳转详情设置 */
+              () => { this.activeSettingTarget = 'shortBreak'; }
+            })
 
-          // 3. 长休息时长
-          ListItem() {
-            this.SettingItemText("长休息时长", `${this.longBreakDuration} 分钟 >`)
-          }.onClick(() => { /* TODO: 跳转详情设置 */ })
+            // 3. 长休息时长
+            ListItem() {
+              this.SettingItemText("长休息时长", `${this.longBreakDuration} 分钟 >`)
+            }.onClick(() => { /* TODO: 跳转详情设置 */
+              () => { this.activeSettingTarget = 'longBreak'; }
+            })
 
-          // 4. 自动开始开关
-          ListItem() {
-            Row() {
-              Text("自动开始时段").fontSize(16).fontColor(Color.White)
-              Toggle({ type: ToggleType.Switch, isOn: this.autoStart })
-                .onChange((isOn: boolean) => {
-                  this.autoStart = isOn;
-                })
+            // 4. 自动开始开关
+            ListItem() {
+              Row() {
+                Text("自动开始时段").fontSize(16).fontColor(Color.White)
+                Toggle({ type: ToggleType.Switch, isOn: this.autoStart })
+                  .onChange((isOn: boolean) => {
+                    this.autoStart = isOn;
+                  })
+              }
+              .width('100%')
+              .padding({
+                left: 20,
+                right: 20,
+                top: 15,
+                bottom: 15
+              })
+              .justifyContent(FlexAlign.SpaceBetween)
+              .backgroundColor('#222222')
+              .borderRadius(10)
             }
-            .width('100%')
-            .padding({ left: 20, right: 20, top: 15, bottom: 15 })
-            .justifyContent(FlexAlign.SpaceBetween)
-            .backgroundColor('#222222')
-            .borderRadius(10)
-          }
 
-          // 5. 专注时段数目
-          ListItem() {
-            this.SettingItemText("专注时段数目", `${this.focusCycleCount} 个 >`)
-          }.onClick(() => { /* TODO: 跳转详情设置 */ })
+            // 5. 专注时段数目
+            ListItem() {
+              this.SettingItemText("专注时段数目", `${this.focusCycleCount} 个 >`)
+            }.onClick(() => { /* TODO: 跳转详情设置 */
+              () => { this.activeSettingTarget = 'cycle'; }
+            })
 
-          // 底部留白，方便滚动到底部
-          ListItem() {
-            Row().height(40)
+            // 底部留白，方便滚动到底部
+            ListItem() {
+              Column() {
+                Text("Pomodoro V1.0")
+                  .fontSize(12)
+                  .fontColor(Color.Gray)
+                  .margin({ top: 10 })
+                Text("Developer: Lycarus")
+                  .fontSize(12)
+                  .fontColor(Color.Gray)
+                  .margin({ top: 5, bottom: 90 }) // 底部加大的 margin 是为了适应原型表盘的弧度
+              }
+              .width('100%')
+              .alignItems(HorizontalAlign.Center)
+            }
           }
+          .width('90%')
+          .height('100%')
         }
-        .width('90%')
-        .height('100%')
       }
       .width('100%')
       .height('100%')
