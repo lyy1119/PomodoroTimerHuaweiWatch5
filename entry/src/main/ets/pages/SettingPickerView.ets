@@ -11,7 +11,7 @@ export struct SettingPickerView {
 
   // --- 内部数据 ---
   // 生成 0 到 99 的字符串数组
-  private rangeOptions: string[] = new Array(100).fill(0).map((_: number, i: number) => (i + 1).toString());
+  private rangeOptions: string[] = new Array(100).fill(0).map((_: number, i: number) => (i).toString());
 
   build() {
     Column() {
@@ -23,6 +23,7 @@ export struct SettingPickerView {
 
       // 2. 中央的滚动菜单 (核心组件)
       TextPicker({ range: this.rangeOptions, selected: this.currentValue })
+        .defaultPickerItemHeight(30) // 设置每个选项的高度（单位默认 vp）
         .onChange((value, index) => {
           // 由于 index 从 0 开始，且正好对应 0-99，直接使用 index 即可
           this.currentValue = index as number;

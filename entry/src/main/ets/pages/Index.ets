@@ -71,6 +71,8 @@ struct Index {
         this.currentTitle = this.timer.currentTitle;
         this.displayTime = this.timer.currentCountdownTime;
       } else {
+        this.timer.reset();
+        this.isRunning = false; // update pause/continue button state
         this.currentTitle = "All Done!";
       }
       // TODO: 弹出包含“✔”和“×”的 CustomDialog 对话框等待用户点击
